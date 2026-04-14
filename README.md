@@ -6,7 +6,7 @@
 
 Claude Code の auto memory はセッション単位で記録を残すが、**セッションを跨いだパターン検出や昇格の仕組みがない**。同じ指摘を何度も繰り返したり、うまくいったアプローチが定着しないまま忘れられる。
 
-cc-retrospective-learner は、セッションの transcript を自動で振り返り、繰り返されるフィードバック（痛み）や成功パターンを検出・蓄積し、閾値を超えたパターンを CLAUDE.md ルールやスキル/Hook に昇格させる。
+cc-retrospective-learner は、セッションの transcript を自動でふりかえり、繰り返されるフィードバック（痛み）や成功パターンを検出・蓄積し、閾値を超えたパターンを CLAUDE.md ルールやスキル/Hook に昇格させる。
 
 > 着想元: [Claude Codeの進化的メモリ](https://zenn.dev/tokium_dev/articles/claude-code-evolutionary-memory)（Zenn記事）。Windows環境・Slack非依存・transcript活用に再設計。
 
@@ -42,7 +42,7 @@ cc-retrospective-learner は、セッションの transcript を自動で振り�
   └─ 昇格候補があればユーザーに提案（承認必須）
 ```
 
-### 振り返りの4視点
+### ふりかえりの4視点
 
 | 視点 | 内容 |
 |------|------|
@@ -64,7 +64,7 @@ transcript で既知の feedback_*.md に該当するパターンを検出
 
 **経路B（新規パターン — weekly-promoter が週次で処理）:**
 ```
-Lv.0 振り返り記録（short-term/）
+Lv.0 ふりかえり記録（short-term/）
   ↓ 週次でパターン検出
 Lv.1 定着パターン（long-term/ に集約 → feedback_*.md を新規作成）
   ↓ pain_count >= 3 or success_count >= 3
@@ -83,7 +83,7 @@ Lv.3 スキル or Hook（パターンの性質で振り分け）
 
 ## 動作例
 
-### session-reviewer が生成する振り返り記録（short-term/）
+### session-reviewer が生成するふりかえり記録（short-term/）
 
 ```markdown
 ---
@@ -109,7 +109,7 @@ project: <プロジェクトパス>
 
 ```
 session-reviewer の結果:
-  - 振り返り: 1件完了
+  - ふりかえり: 1件完了
   - 昇格候補: feedback_no_background_agent.md (pain_count: 3)
     → サブエージェントをバックグラウンドで起動してはならない
 
@@ -181,7 +181,7 @@ cc-retrospective-learner/
 │   ├── cc-retrospective-learner.md         # プロトコル指示
 │   ├── cc-retrospective-learner-design.md  # 設計書
 │   ├── agents/
-│   │   ├── session-reviewer.md     # セッション振り返りサブエージェント
+│   │   ├── session-reviewer.md     # セッションふりかえりサブエージェント
 │   │   └── weekly-promoter.md      # 週次昇格サブエージェント
 │   ├── hooks/
 │   │   └── guard-memory-write.sh   # 書き込み先ガードスクリプト
@@ -198,7 +198,7 @@ cc-retrospective-learner/
 | 判断 | 理由 |
 |------|------|
 | Slack連携なし、transcript活用 | transcript.jsonl にセッション全会話が入っており、Slackより精度が高い |
-| サブエージェントで振り返り | 親コンテキストを消費しない。結果サマリーだけ返る |
+| サブエージェントでふりかえり | 親コンテキストを消費しない。結果サマリーだけ返る |
 | pain_count だけでなく success_count も | 「やめるべきこと」だけでなく「続けるべきこと」も学ぶ |
 | コードブロックではなく自然言語で指示 | LLM はコードブロックを「参考情報」扱いしてパラメータを勝手に変える |
 | フックで書き込み先を機械的にガード | LLM の指示ベースの制限には限界がある |
@@ -209,7 +209,7 @@ cc-retrospective-learner/
 
 ### 成功（継続）
 - pain_count が実際にインクリメントされたファイルが1つ以上
-- short-term/ に振り返り記録が3件以上
+- short-term/ にふりかえり記録が3件以上
 - CLAUDE.md への昇格提案が1回以上
 
 ### 失敗（ロールバック）

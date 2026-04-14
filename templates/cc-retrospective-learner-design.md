@@ -3,11 +3,11 @@
 ## 概要
 
 セッションデータを活用したふりかえりベースの学習機構。
-セッション振り返り（transcript.jsonl）でLayer 1（観察）を実現し、
+セッションふりかえり（transcript.jsonl）でLayer 1（観察）を実現し、
 pain_count / success_count ベースの昇格でLayer 2-3（記憶・進化）を回す。
 
 - 定期実行不要（日付チェックでセッション開始時に処理）
-- 振り返り・週次昇格はサブエージェントで実行（親コンテキスト保護）
+- ふりかえり・週次昇格はサブエージェントで実行（親コンテキスト保護）
 
 ## アーキテクチャ
 
@@ -40,7 +40,7 @@ pain_count / success_count ベースの昇格でLayer 2-3（記憶・進化）�
   └─ 昇格候補があればユーザーに提案
 ```
 
-### 振り返りの4視点
+### ふりかえりの4視点
 
 | 視点 | 内容 |
 |------|------|
@@ -62,7 +62,7 @@ transcript で既知の feedback_*.md に該当するフィードバックを検
 #### 経路B（新規パターン — weekly-promoter）
 
 ```
-Lv.0 振り返り記録（short-term/）
+Lv.0 ふりかえり記録（short-term/）
   ↓ 週次でパターン検出
 Lv.1 定着パターン（long-term/ → feedback_*.md 新規作成）
   ↓ pain_count >= 3 or success_count >= 3
@@ -85,11 +85,11 @@ Lv.3 スキル or Hook
 | `CLAUDE.md` | Claude Code | ふりかえりプロトコルへの参照 + 学習済みルール（昇格先） |
 | `cc-retrospective-learner.md` | Claude Code | プロトコル指示（何をすべきか） |
 | `cc-retrospective-learner-design.md` | 人間 / Claude Code | 設計書（本ファイル） |
-| `sessions.md` | 人間 / session-reviewer | セッション一覧・振り返り状況 |
+| `sessions.md` | 人間 / session-reviewer | セッション一覧・ふりかえり状況 |
 | `last_weekly_review.txt` | Claude Code | 週次昇格の最終実行日 |
-| `agents/session-reviewer.md` | Claude Code | セッション振り返りサブエージェント定義 |
+| `agents/session-reviewer.md` | Claude Code | セッションふりかえりサブエージェント定義 |
 | `agents/weekly-promoter.md` | Claude Code | 週次昇格サブエージェント定義 |
-| `projects/{key}/memory/short-term/` | session-reviewer / weekly-promoter | セッションごとの振り返り記録（プロジェクト別） |
+| `projects/{key}/memory/short-term/` | session-reviewer / weekly-promoter | セッションごとのふりかえり記録（プロジェクト別） |
 | `projects/{key}/memory/long-term/` | weekly-promoter | 週次で定着したパターン（プロジェクト別） |
 | `projects/{key}/memory/feedback_*.md` | session-reviewer / weekly-promoter | 個別フィードバック（プロジェクト別） |
 | `projects/{key}/memory/user_*.md` | weekly-promoter / Claude Code | ユーザー傾向（昇格対象外、プロジェクト別） |
@@ -101,12 +101,12 @@ Lv.3 スキル or Hook
 ```markdown
 # セッション一覧
 
-| 日時 | session_id | プロジェクト | 概要 | 振り返り | transcript |
+| 日時 | session_id | プロジェクト | 概要 | ふりかえり | transcript |
 |------|-----------|-------------|------|---------|-----------|
 | 2026-04-12 02:00 | abc123 | project-name | 作業概要 | 済 | /path/to/transcript.jsonl |
 ```
 
-- 振り返り列の値: `未`, `済`, `スキップ（transcript未検出）`
+- ふりかえり列の値: `未`, `済`, `スキップ（transcript未検出）`
 - session-reviewer が管理する
 
 ### short-term/ ファイル
@@ -151,7 +151,7 @@ source_sessions:
 ## パターン概要
 （パターンの説明）
 
-## 該当する振り返り抜粋
+## 該当するふりかえり抜粋
 （各セッションからの関連部分）
 ```
 

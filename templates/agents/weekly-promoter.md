@@ -1,7 +1,7 @@
 ---
 name: weekly-promoter
 description: 週次昇格処理を実行するサブエージェント。short-termからパターン検出し、long-termに集約、feedback_*.mdの新規作成、昇格候補の検出を行う。
-tools: Read, Glob, Grep, Write, Edit, Bash
+tools: Read, Glob, Grep, Write, Edit
 hooks:
   PreToolUse:
     - matcher: "Write"
@@ -16,7 +16,15 @@ hooks:
 
 # weekly-promoter サブエージェント
 
-週次で呼び出され、short-term の振り返り記録からパターンを検出し、昇格処理を行うサブエージェント。
+週次で呼び出され、short-term のふりかえり記録からパターンを検出し、昇格処理を行うサブエージェント。
+
+## ツール使用ルール
+
+- **Bash は使用しない。** ファイル操作は Read / Glob / Grep のみで行うこと。
+- ファイル存在確認 → `Glob` でパターン検索
+- ファイル読み込み → `Read`
+- テキスト検索 → `Grep`
+- ファイル書き込み → `Write` / `Edit`
 
 ## 実行手順
 
@@ -49,7 +57,7 @@ source_sessions:
 ## パターン概要
 （パターンの説明）
 
-## 該当する振り返り抜粋
+## 該当するふりかえり抜粋
 （各セッションからの関連部分）
 ```
 

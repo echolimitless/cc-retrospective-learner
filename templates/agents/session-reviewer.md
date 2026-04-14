@@ -1,7 +1,7 @@
 ---
 name: session-reviewer
-description: セッション振り返りを実行するサブエージェント。sessions.mdの未振り返りセッションを確認し、transcriptを4視点で分析してshort-termに記録する。
-tools: Read, Glob, Grep, Write, Edit, Bash
+description: セッションふりかえりを実行するサブエージェント。sessions.mdの未ふりかえりセッションを確認し、transcriptを4視点で分析してshort-termに記録する。
+tools: Read, Glob, Grep, Write, Edit
 hooks:
   PreToolUse:
     - matcher: "Write"
@@ -16,17 +16,24 @@ hooks:
 
 # session-reviewer サブエージェント
 
-セッション開始時に呼び出され、前回セッションの振り返りを行うサブエージェント。
+セッション開始時に呼び出され、前回セッションのふりかえりを行うサブエージェント。
+
+## ツール使用ルール
+
+- **Bash は使用しない。** ファイル操作は Read / Glob / Grep のみで行うこと。
+- ファイル存在確認 → `Glob` でパターン検索
+- ファイル読み込み → `Read`（transcript.jsonl 含む）
+- テキスト検索 → `Grep`
 
 ## 実行手順
 
-### 1. 未振り返りセッションの確認
+### 1. 未ふりかえりセッションの確認
 
-`~/.claude/sessions.md` を読み、振り返り列が「未」のセッションを特定する。
+`~/.claude/sessions.md` を読み、ふりかえり列が「未」のセッションを特定する。
 
-- 未振り返りセッションがない場合 → 手順3（現在のセッション登録）へスキップ
+- 未ふりかえりセッションがない場合 → 手順3（結果サマリーの返却）へスキップ
 
-### 2. 各「未」セッションの振り返り
+### 2. 各「未」セッションのふりかえり
 
 各「未」セッションについて以下を実行する:
 
@@ -35,7 +42,7 @@ hooks:
 - sessions.md の transcript 列からパスを取得
 - transcript.jsonl を読む
 - transcript が見つからない場合:
-  - sessions.md の振り返り列を「スキップ（transcript未検出）」に更新
+  - sessions.md のふりかえり列を「スキップ（transcript未検出）」に更新
   - sessions.md 内で「スキップ（transcript未検出）」が5件連続していたら、結果サマリーに警告を含める
   - 次のセッションへ進む
 
@@ -80,7 +87,7 @@ project: <プロジェクトパス>
 
 #### 2d. 既存 feedback との照合（経路A）
 
-`{project_memory_path}/feedback_*.md` を読み、今回の振り返り内容と照合する。
+`{project_memory_path}/feedback_*.md` を読み、今回のふりかえり内容と照合する。
 
 - 該当する feedback がある場合:
   - pain に該当（修正・失敗パターン） → `pain_count` をインクリメント
@@ -89,24 +96,10 @@ project: <プロジェクトパス>
 
 #### 2e. sessions.md の更新
 
-- 振り返りが完了したセッションの振り返り列を「済」に更新
-- 概要列に振り返りの要約を記入
+- ふりかえりが完了したセッションのふりかえり列を「済」に更新
+- 概要列にふりかえりの要約を記入
 
-### 3. 現在のセッション情報の登録
-
-呼び出し元から受け取った現在のセッション情報を sessions.md に「未」で登録する。
-
-**重要: 登録するのは呼び出し元から渡された現在のセッション情報のみ。過去のセッションを探索・発見して追加してはならない。**
-
-transcript パスの構築:
-- Windows: `~/.claude/projects/<project-key>/sessions/<session_id>/transcript.jsonl`
-- project-key: プロジェクトの絶対パスから構築（パス区切りを `-` に変換し、先頭のドライブレター・区切りを含む）
-
-```markdown
-| <日時> | <session_id> | <プロジェクト> | | 未 | <transcript_path> |
-```
-
-### 4. 結果サマリーの返却
+### 3. 結果サマリーの返却
 
 以下を含むサマリーを親に返す:
 

@@ -7,7 +7,7 @@ Zenn記事「Claude Codeの進化的メモリ」(https://zenn.dev/tokium_dev/art
 
 ### Zenn記事の概要
 - 繰り返されるフィードバック（「痛み」）を `pain_count` で追跡し、閾値に達したらCLAUDE.mdルールやHookに自動昇格させる仕組み
-- 3層構造: Layer 1（観察: Slack日次振り返り）→ Layer 2（記憶: daily→short-term→long-term）→ Layer 3（進化: pain_count≥3でCLAUDE.md/Hookへ昇格）
+- 3層構造: Layer 1（観察: Slack日次ふりかえり）→ Layer 2（記憶: daily→short-term→long-term）→ Layer 3（進化: pain_count≥3でCLAUDE.md/Hookへ昇格）
 - macOS + launchd + Slack + node 前提
 
 ### 最初の課題
@@ -32,11 +32,11 @@ Zenn記事「Claude Codeの進化的メモリ」(https://zenn.dev/tokium_dev/art
 ### Phase 3: transcriptの発見
 - SessionEnd Hookに `transcript_path` が渡されることを発見
 - transcript.jsonl にはセッション中の全会話が記録されている
-- **判断**: Slack連携の代わりにtranscriptからセッション振り返りを行う → Slackより精度が高い
+- **判断**: Slack連携の代わりにtranscriptからセッションふりかえりを行う → Slackより精度が高い
 
 ### Phase 4: サブエージェントの導入
-- 振り返りでtranscriptを読むと親のコンテキストを大量消費する問題
-- **判断**: 振り返りをサブエージェントで実行し、親には結果サマリーだけ返す
+- ふりかえりでtranscriptを読むと親のコンテキストを大量消費する問題
+- **判断**: ふりかえりをサブエージェントで実行し、親には結果サマリーだけ返す
 
 ### Phase 5: success_countの追加
 - 元の記事は「痛み（失敗）」だけを追跡
@@ -45,7 +45,7 @@ Zenn記事「Claude Codeの進化的メモリ」(https://zenn.dev/tokium_dev/art
 ### Phase 6: セッション一覧（sessions.md）
 - SessionEnd Hookを廃止し、全てセッション開始時に処理する方針に
 - sessions.md でセッション管理。人間も読める台帳形式
-- 振り返り完了後に自分のセッションを「未」で登録（自分自身を振り返り対象にしない）
+- ふりかえり完了後に自分のセッションを「未」で登録（自分自身をふりかえり対象にしない）
 
 ### Phase 7: 経路A/Bの設計
 - 経路A: 既知のフィードバック → session-reviewerが即座にpain_count更新（セッション開始時）
@@ -75,9 +75,9 @@ Zenn記事「Claude Codeの進化的メモリ」(https://zenn.dev/tokium_dev/art
 | 項目 | Zenn記事 | cc-retrospective-learner |
 |------|---------|--------------------------|
 | データ収集 | Slack日常会話 + SessionEnd Hook | transcript.jsonl（セッション全会話） |
-| 振り返りタイミング | 毎日19:00（launchd） | セッション開始時（サブエージェント） |
-| 振り返りの実行者 | Claude Code本体（cron起動） | session-reviewerサブエージェント（コンテキスト保護） |
-| 振り返りの視点 | 判断基準・口癖・価値観・コミュニケーションスタイル | フィードバックと改善・承認パターン・意思決定と価値観・作業内容 |
+| ふりかえりタイミング | 毎日19:00（launchd） | セッション開始時（サブエージェント） |
+| ふりかえりの実行者 | Claude Code本体（cron起動） | session-reviewerサブエージェント（コンテキスト保護） |
+| ふりかえりの視点 | 判断基準・口癖・価値観・コミュニケーションスタイル | フィードバックと改善・承認パターン・意思決定と価値観・作業内容 |
 | pain_count更新 | セッション中にClaude Codeが即座に | 経路A: セッション開始時にsession-reviewerが / 経路B: 週次でweekly-promoterが |
 | success_count | なし | あり |
 | 新規パターン検出 | 週次cron（金曜20:00） | weekly-promoter（セッション開始時に日付チェック） |
@@ -135,7 +135,7 @@ transcript で既知の feedback_*.md に該当するフィードバックを検
 
 **経路B（新規パターン — weekly-promoter が週次で処理）:**
 ```
-Lv.0 振り返り記録（short-term/）
+Lv.0 ふりかえり記録（short-term/）
   ↓ 週次でパターン検出
 Lv.1 定着パターン（long-term/ に集約 → feedback_*.md を新規作成）
   ↓ pain_count ≥ 3 or success_count ≥ 3
@@ -150,7 +150,7 @@ Lv.3 スキル or Hook（パターンの性質で振り分け）
   - 「前後に必ずやる」系 → Hook（settings.json hooks）
 ```
 
-### 振り返りの4視点
+### ふりかえりの4視点
 | 視点 | 内容 |
 |------|------|
 | フィードバックと改善 | 修正された箇所 + 次回どうすべきか |
@@ -181,7 +181,7 @@ Lv.3 スキル or Hook（パターンの性質で振り分け）
 
 セッション開始時に以下を実行する。
 
-## 1. セッション振り返り
+## 1. セッションふりかえり
 
 `session-reviewer` サブエージェントをフォアグラウンドで起動する。
 
@@ -208,7 +208,7 @@ weekly-promoter の結果に昇格候補がある場合、ユーザーに提案�
 
 ## 注意事項
 
-- 振り返り・週次昇格はサブエージェントで実行し、親コンテキストを消費しない
+- ふりかえり・週次昇格はサブエージェントで実行し、親コンテキストを消費しない
 - サブエージェントからは結果サマリーだけを受け取る
 - セッション中のカウント更新はしない（次のセッション開始時に session-reviewer が実施）
 ```
@@ -218,7 +218,7 @@ weekly-promoter の結果に昇格候補がある場合、ユーザーに提案�
 ```markdown
 ---
 name: session-reviewer
-description: セッション振り返りを実行するサブエージェント。sessions.mdの未振り返りセッションを確認し、transcriptを4視点で分析してshort-termに記録する。
+description: セッションふりかえりを実行するサブエージェント。sessions.mdの未ふりかえりセッションを確認し、transcriptを4視点で分析してshort-termに記録する。
 tools: Read, Glob, Grep, Write, Edit, Bash
 hooks:
   PreToolUse:
@@ -234,7 +234,7 @@ hooks:
 
 # session-reviewer サブエージェント
 
-セッション開始時に呼び出され、前回セッションの振り返りを行うサブエージェント。
+セッション開始時に呼び出され、前回セッションのふりかえりを行うサブエージェント。
 
 （以下略。リポジトリ参照）
 ```
@@ -289,11 +289,11 @@ printf '{"continue":false,"stopReason":"書き込み先が許可範囲外です:
 ```markdown
 # セッション一覧
 
-| 日時 | session_id | プロジェクト | 概要 | 振り返り | transcript |
+| 日時 | session_id | プロジェクト | 概要 | ふりかえり | transcript |
 |------|-----------|-------------|------|---------|-----------|
 ```
 
-### 実際に生成された振り返りファイル例（short-term/）
+### 実際に生成されたふりかえりファイル例（short-term/）
 ```markdown
 ---
 session_id: 93e583ab-a55c-42cc-b4aa-96d0a62d3ab7
@@ -395,7 +395,7 @@ Long-term Evolutionを計画に入れたが、駆動源（定期実行）がな�
 Slack連携は外部依存が増えるだけ。transcript.jsonlにはセッション全会話が入っているので、Claude Codeとの対話の中にあるデータの方が精度が高い。
 
 ### 「サブエージェントでコンテキスト保護」
-振り返りでtranscriptを読むと親コンテキストが汚れる。サブエージェントなら独自コンテキストで動くので、親には結果サマリーだけが返る。
+ふりかえりでtranscriptを読むと親コンテキストが汚れる。サブエージェントなら独自コンテキストで動くので、親には結果サマリーだけが返る。
 
 ### 「pain_countだけでなくsuccess_countも」
 失敗から学ぶだけでなく、成功パターンも記録・昇格する。「やめるべきこと」と「続けるべきこと」の両方を学ぶ。
