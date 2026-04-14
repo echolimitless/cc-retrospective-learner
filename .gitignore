@@ -6,5 +6,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Claude Code local settings
-.claude/
+# Claude Code local settings (CLAUDE.md は管理対象)
+.claude/*
+!.claude/CLAUDE.md

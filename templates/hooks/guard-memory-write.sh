@@ -13,16 +13,16 @@ if [ -z "$file_path" ]; then
 fi
 
 # 許可するパスパターン
-# - sessions.md
+# - reviewed_sessions.md
 # - memory/short-term/
 # - memory/long-term/
 # - memory/feedback_*.md
 # - memory/user_*.md
 # - memory/MEMORY.md
 # - last_weekly_review.txt
-if echo "$file_path" | grep -qE '(sessions\.md|memory/(short-term|long-term)/|memory/feedback_|memory/user_|memory/MEMORY\.md|last_weekly_review\.txt)'; then
+if echo "$file_path" | grep -qE '(reviewed_sessions\.md|memory/(short-term|long-term)/|memory/feedback_|memory/user_|memory/MEMORY\.md|last_weekly_review\.txt)'; then
   exit 0
 fi
 
 # 許可範囲外 → ブロック
-printf '{"continue":false,"stopReason":"書き込み先が許可範囲外です: %s\\nメモリ関連ファイル（sessions.md, memory/short-term/, memory/long-term/, memory/feedback_*.md, memory/user_*.md, memory/MEMORY.md, last_weekly_review.txt）のみ書き込み可能です。"}' "$file_path"
+printf '{"continue":false,"stopReason":"書き込み先が許可範囲外です: %s\\nメモリ関連ファイル（reviewed_sessions.md, memory/short-term/, memory/long-term/, memory/feedback_*.md, memory/user_*.md, memory/MEMORY.md, last_weekly_review.txt）のみ書き込み可能です。"}' "$file_path"

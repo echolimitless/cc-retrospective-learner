@@ -3,8 +3,10 @@ set -euo pipefail
 
 # cc-retrospective-learner セットアップ兼ロールバックスクリプト
 # Usage:
-#   bash cc-retrospective-learner-setup.sh install   # セットアップ
-#   bash cc-retrospective-learner-setup.sh rollback  # ロールバック
+#   bash cc-retrospective-learner-setup.sh install                # 対話的に方式選択
+#   bash cc-retrospective-learner-setup.sh install --mode=everytime   # 毎回方式
+#   bash cc-retrospective-learner-setup.sh install --mode=ondemand    # オンデマンド方式
+#   bash cc-retrospective-learner-setup.sh rollback               # ロールバック
 
 CLAUDE_DIR="$HOME/.claude"
 BACKUP_DIR="$CLAUDE_DIR/backups/pre-cc-retrospective-learner"
@@ -23,6 +25,8 @@ ok()    { echo -e "\033[1;32m[OK]\033[0m    $*"; }
 # install
 # -------------------------------------------------------------------
 do_install() {
+  local mode="${1:-}"
+
   info "ふりかえりベースの学習機構をセットアップします"
 
   # 前提チェック
@@ -41,6 +45,30 @@ do_install() {
     warn "既にセットアップ済みです。再インストールする場合は先に rollback を実行してください。"
     exit 1
   fi
+
+  # --- 方式選択 ---
+  if [[ -z "$mode" ]]; then
+    echo ""
+    info "ふりかえり方式を選択してください:"
+    echo ""
+    echo "  1) 毎回方式"
+    echo "     セッション開始時にふりかえりを確認し、承認されたら実行"
+    echo ""
+    echo "  2) オンデマンド方式"
+    echo "     セッション開始時は何もしない。手動でふりかえりを指示した時に実行"
+    echo ""
+    read -rp "選択 [1/2]: " mode_choice
+    case "$mode_choice" in
+      1) mode="everytime" ;;
+      2) mode="ondemand" ;;
+      *)
+        error "無効な選択です。1 または 2 を入力してください。"
+        exit 1
+        ;;
+    esac
+  fi
+
+  info "方式: $mode"
 
   # --- 1. バックアップ ---
   info "バックアップを作成しています..."
@@ -81,17 +109,14 @@ do_install() {
   cp "$TEMPLATES_DIR/rollback.md" "$BACKUP_DIR/rollback.md"
   ok "バックアップ完了: $BACKUP_DIR"
 
-  # --- 2. テンプレートファイルをコピー ---
+  # --- 2. 共通テンプレートファイルをコピー ---
   info "テンプレートファイルをコピーしています..."
-
-  cp "$TEMPLATES_DIR/cc-retrospective-learner.md" "$CLAUDE_DIR/cc-retrospective-learner.md"
-  ok "cc-retrospective-learner.md"
 
   cp "$TEMPLATES_DIR/cc-retrospective-learner-design.md" "$CLAUDE_DIR/cc-retrospective-learner-design.md"
   ok "cc-retrospective-learner-design.md"
 
-  cp "$TEMPLATES_DIR/sessions.md" "$CLAUDE_DIR/sessions.md"
-  ok "sessions.md"
+  cp "$TEMPLATES_DIR/reviewed_sessions.md" "$CLAUDE_DIR/reviewed_sessions.md"
+  ok "reviewed_sessions.md"
 
   cp "$TEMPLATES_DIR/last_weekly_review.txt" "$CLAUDE_DIR/last_weekly_review.txt"
   ok "last_weekly_review.txt"
@@ -109,7 +134,18 @@ do_install() {
   cp "$TEMPLATES_DIR/hooks/guard-memory-write.sh" "$CLAUDE_DIR/hooks/guard-memory-write.sh"
   ok "hooks/guard-memory-write.sh"
 
-  # --- 3. プロジェクト別 memory ディレクトリ作成 ---
+  # --- 3. 方式別ファイルをコピー ---
+  info "方式別ファイルをコピーしています（$mode）..."
+
+  if [[ "$mode" == "everytime" ]]; then
+    cp "$TEMPLATES_DIR/cc-retrospective-learner.md" "$CLAUDE_DIR/cc-retrospective-learner.md"
+    ok "cc-retrospective-learner.md（毎回方式）"
+  else
+    cp "$TEMPLATES_DIR/cc-retrospective-learner-ondemand.md" "$CLAUDE_DIR/cc-retrospective-learner.md"
+    ok "cc-retrospective-learner.md（オンデマンド方式）"
+  fi
+
+  # --- 4. プロジェクト別 memory ディレクトリ作成 ---
   info "プロジェクト別メモリディレクトリを作成しています..."
   local created=0
   for pdir in "$CLAUDE_DIR"/projects/*/; do
@@ -121,28 +157,44 @@ do_install() {
   done
   ok "short-term/, long-term/ を ${created} プロジェクトに作成"
 
-  # --- 4. スクリプト自身を ~/.claude/ にコピー ---
+  # --- 5. スクリプト自身を ~/.claude/ にコピー ---
   info "セットアップスクリプトをコピーしています..."
   cp "$SCRIPT_DIR/cc-retrospective-learner-setup.sh" "$CLAUDE_DIR/cc-retrospective-learner-setup.sh"
   ok "cc-retrospective-learner-setup.sh → ~/.claude/"
 
-  # --- 5. CLAUDE.md にセクション追記 ---
+  # --- 6. 方式を記録 ---
+  echo "$mode" > "$CLAUDE_DIR/cc-retrospective-learner-mode.txt"
+  ok "方式を記録: $mode"
+
+  # --- 7. CLAUDE.md にセクション追記 ---
   info "CLAUDE.md にセクションを追記しています..."
+
+  local section_file
+  if [[ "$mode" == "everytime" ]]; then
+    section_file="$TEMPLATES_DIR/claude-md-section.md"
+  else
+    section_file="$TEMPLATES_DIR/claude-md-section-ondemand.md"
+  fi
+
   if [[ -f "$CLAUDE_DIR/CLAUDE.md" ]]; then
     # 末尾に改行を確保してから追記
     echo "" >> "$CLAUDE_DIR/CLAUDE.md"
-    cat "$TEMPLATES_DIR/claude-md-section.md" >> "$CLAUDE_DIR/CLAUDE.md"
+    cat "$section_file" >> "$CLAUDE_DIR/CLAUDE.md"
   else
-    cp "$TEMPLATES_DIR/claude-md-section.md" "$CLAUDE_DIR/CLAUDE.md"
+    cp "$section_file" "$CLAUDE_DIR/CLAUDE.md"
   fi
   ok "CLAUDE.md 更新完了"
 
   echo ""
   info "============================================"
-  ok   "セットアップが完了しました！"
+  ok   "セットアップが完了しました！（$mode 方式）"
   info "============================================"
   echo ""
-  info "次回の Claude Code セッション開始時からふりかえりベースの学習機構が有効になります。"
+  if [[ "$mode" == "everytime" ]]; then
+    info "次回の Claude Code セッション開始時からふりかえりベースの学習機構が有効になります。"
+  else
+    info "ふりかえりを実行したい時は、セッション中に「ふりかえり」と指示してください。"
+  fi
   info "ロールバック: bash cc-retrospective-learner-setup.sh rollback"
   info "手動ロールバック手順: $BACKUP_DIR/rollback.md"
 }
@@ -173,6 +225,8 @@ do_rollback() {
     "$CLAUDE_DIR/cc-retrospective-learner.md"
     "$CLAUDE_DIR/cc-retrospective-learner-design.md"
     "$CLAUDE_DIR/cc-retrospective-learner-setup.sh"
+    "$CLAUDE_DIR/cc-retrospective-learner-mode.txt"
+    "$CLAUDE_DIR/reviewed_sessions.md"
     "$CLAUDE_DIR/sessions.md"
     "$CLAUDE_DIR/last_weekly_review.txt"
     "$CLAUDE_DIR/agents/session-reviewer.md"
@@ -220,7 +274,19 @@ do_rollback() {
 # -------------------------------------------------------------------
 case "${1:-}" in
   install)
-    do_install
+    # --mode=xxx オプションの解析
+    mode=""
+    for arg in "${@:2}"; do
+      case "$arg" in
+        --mode=everytime) mode="everytime" ;;
+        --mode=ondemand)  mode="ondemand" ;;
+        --mode=*)
+          error "無効な方式です: $arg（--mode=everytime または --mode=ondemand）"
+          exit 1
+          ;;
+      esac
+    done
+    do_install "$mode"
     ;;
   rollback)
     do_rollback
@@ -228,8 +294,10 @@ case "${1:-}" in
   *)
     echo "Usage: bash $(basename "$0") {install|rollback}"
     echo ""
-    echo "  install   - ふりかえりベースの学習機構をセットアップ"
-    echo "  rollback  - セットアップ前の状態に戻す"
+    echo "  install                  - 対話的に方式を選択してセットアップ"
+    echo "  install --mode=everytime - 毎回方式でセットアップ"
+    echo "  install --mode=ondemand  - オンデマンド方式でセットアップ"
+    echo "  rollback                 - セットアップ前の状態に戻す"
     exit 1
     ;;
 esac

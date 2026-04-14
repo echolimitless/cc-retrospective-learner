@@ -9,21 +9,46 @@ pain_count / success_count ベースの昇格でLayer 2-3（記憶・進化）�
 - 定期実行不要（日付チェックでセッション開始時に処理）
 - ふりかえり・週次昇格はサブエージェントで実行（親コンテキスト保護）
 
+## ふりかえり方式
+
+セットアップ時に2つの方式から選択できる。
+
+### 毎回方式
+
+セッション開始時に「ふりかえりを実施しますか？」と確認し、承認されたら実行する。
+
+- セッション開始時のコスト: 確認プロンプト + ふりかえり実行時間
+- ふりかえり拒否時: 何も記録しない（次回のふりかえり対象になる）
+
+### オンデマンド方式
+
+セッション開始時は何もしない。ユーザーが「ふりかえり」等と指示した時にまとめて実行する。
+
+- セッション開始時のコスト: ゼロ
+- 未ふりかえりセッションをまとめて処理
+
 ## アーキテクチャ
 
-### セッション開始時の処理フロー
+### 毎回方式の処理フロー
 
 ```
 セッション開始
   │
+  ├─ ユーザーに確認「ふりかえりを実施しますか？」
+  │   ├─ はい → 未ふりかえりセッション収集 → ふりかえり実行
+  │   └─ いいえ → 何もしない
+  │
+  ├─ 未ふりかえりセッション収集
+  │   ├─ reviewed_sessions.md から済み session_id を取得
+  │   ├─ ~/.claude/projects/*/*.jsonl を列挙
+  │   └─ 差分が未ふりかえり対象
+  │
   ├─ session-reviewer 起動（サブエージェント）
-  │   ├─ sessions.md から「未」セッションを確認
   │   ├─ transcript を読んで4視点で分析
   │   ├─ short-term/ に記録
   │   ├─ 既存 feedback_*.md と照合 → カウント更新（経路A）
   │   ├─ 昇格候補を検出
-  │   ├─ sessions.md を更新
-  │   └─ 結果サマリーを返却
+  │   └─ reviewed_sessions.md に登録
   │
   ├─ 昇格候補があればユーザーに提案
   │
@@ -40,6 +65,28 @@ pain_count / success_count ベースの昇格でLayer 2-3（記憶・進化）�
   └─ 昇格候補があればユーザーに提案
 ```
 
+### オンデマンド方式の処理フロー
+
+```
+ユーザーが「ふりかえり」と指示
+  │
+  ├─ 未ふりかえりセッション収集
+  │   ├─ reviewed_sessions.md から済み session_id を取得
+  │   ├─ ~/.claude/projects/*/*.jsonl を列挙
+  │   └─ 差分が未ふりかえり対象（なければ終了）
+  │
+  ├─ session-reviewer 起動（サブエージェント）
+  │   （毎回方式と同一）
+  │
+  ├─ 昇格候補があればユーザーに提案
+  │
+  ├─ last_weekly_review.txt 確認
+  │   └─ 7日以上前なら weekly-promoter 起動（サブエージェント）
+  │       （毎回方式と同一）
+  │
+  └─ 昇格候補があればユーザーに提案
+```
+
 ### ふりかえりの4視点
 
 | 視点 | 内容 |
@@ -48,6 +95,13 @@ pain_count / success_count ベースの昇格でLayer 2-3（記憶・進化）�
 | 承認パターン | うまくいったこと・受け入れられた提案 |
 | 意思決定と価値観 | 何を選び、なぜそう判断したか、何を重視しているか |
 | 作業内容 | 何をやったか（事実の記録） |
+
+### 未ふりかえりセッションの判定
+
+- `~/.claude/projects/<project-key>/<session_id>.jsonl` が transcript ファイル
+- `reviewed_sessions.md` に session_id が含まれていれば「済」
+- 含まれていなければ「未ふりかえり」
+- ファイルの mtime は使用しない（過去セッションの再開で変わるため）
 
 ### 昇格階段
 
@@ -83,9 +137,10 @@ Lv.3 スキル or Hook
 | ファイル | 読む人 | 役割 |
 |---------|--------|------|
 | `CLAUDE.md` | Claude Code | ふりかえりプロトコルへの参照 + 学習済みルール（昇格先） |
-| `cc-retrospective-learner.md` | Claude Code | プロトコル指示（何をすべきか） |
+| `cc-retrospective-learner.md` | Claude Code | プロトコル指示（方式に応じた内容がコピーされる） |
 | `cc-retrospective-learner-design.md` | 人間 / Claude Code | 設計書（本ファイル） |
-| `sessions.md` | 人間 / session-reviewer | セッション一覧・ふりかえり状況 |
+| `cc-retrospective-learner-mode.txt` | セットアップスクリプト | 選択された方式（`everytime` or `ondemand`） |
+| `reviewed_sessions.md` | 人間 / session-reviewer | ふりかえり済みセッション一覧 |
 | `last_weekly_review.txt` | Claude Code | 週次昇格の最終実行日 |
 | `agents/session-reviewer.md` | Claude Code | セッションふりかえりサブエージェント定義 |
 | `agents/weekly-promoter.md` | Claude Code | 週次昇格サブエージェント定義 |
@@ -96,18 +151,18 @@ Lv.3 スキル or Hook
 
 ## ファイルフォーマット仕様
 
-### sessions.md
+### reviewed_sessions.md
 
 ```markdown
-# セッション一覧
+# ふりかえり済みセッション
 
-| 日時 | session_id | プロジェクト | 概要 | ふりかえり | transcript |
-|------|-----------|-------------|------|---------|-----------|
-| 2026-04-12 02:00 | abc123 | project-name | 作業概要 | 済 | /path/to/transcript.jsonl |
+| session_id | 日付 | プロジェクト | 概要 |
+|-----------|------|-------------|------|
+| abc123 | 2026-04-12 | project-name | 作業概要 |
 ```
 
-- ふりかえり列の値: `未`, `済`, `スキップ（transcript未検出）`
-- session-reviewer が管理する
+- このファイルに session_id がある = ふりかえり済み
+- session-reviewer がふりかえり完了時に追記する
 
 ### short-term/ ファイル
 
@@ -194,6 +249,20 @@ YYYY-MM-DD
 
 日付のみ。1行。weekly-promoter が実行後に更新する。
 
+### cc-retrospective-learner-mode.txt
+
+```
+everytime
+```
+
+または
+
+```
+ondemand
+```
+
+方式名のみ。1行。セットアップスクリプトが作成する。
+
 ## セットアップ（別PC展開）
 
 ### 前提条件
@@ -209,16 +278,22 @@ YYYY-MM-DD
 git clone https://github.com/<owner>/cc-retrospective-learner.git
 cd cc-retrospective-learner
 
-# セットアップ実行
+# 対話的にセットアップ（方式を選択）
 bash cc-retrospective-learner-setup.sh install
+
+# または方式を指定してセットアップ
+bash cc-retrospective-learner-setup.sh install --mode=everytime
+bash cc-retrospective-learner-setup.sh install --mode=ondemand
 ```
 
 セットアップスクリプトが以下を実行する:
 1. 既存ファイルのバックアップ（`~/.claude/backups/pre-cc-retrospective-learner/`）
-2. テンプレートファイルを `~/.claude/` にコピー
-3. セットアップスクリプトを `~/.claude/` にコピー
-4. CLAUDE.md にセクションを追記（マーカー付き）
-5. 各プロジェクトの memory/ に short-term/, long-term/ ディレクトリを作成
+2. 共通テンプレートファイルを `~/.claude/` にコピー
+3. 方式に応じたプロトコルファイルを `~/.claude/cc-retrospective-learner.md` としてコピー
+4. セットアップスクリプトを `~/.claude/` にコピー
+5. 選択方式を `~/.claude/cc-retrospective-learner-mode.txt` に記録
+6. CLAUDE.md に方式に応じたセクションを追記（マーカー付き）
+7. 各プロジェクトの memory/ に short-term/, long-term/ ディレクトリを作成
 
 ### ロールバック
 
@@ -227,6 +302,9 @@ bash cc-retrospective-learner-setup.sh rollback
 ```
 
 または手動: `~/.claude/backups/pre-cc-retrospective-learner/rollback.md` を参照。
+
+ロールバックで消えるもの: 仕組み（プロトコル、サブエージェント定義、hooks、short-term/, long-term/）
+ロールバックで残るもの: 学習成果（feedback_*.md, user_*.md, CLAUDE.md の昇格済みルール, 昇格済みスキル/Hook）
 
 ## 拡張ガイド
 

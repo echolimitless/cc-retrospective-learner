@@ -29,6 +29,8 @@ cc-retrospective-learner-setup.sh rollback が動かない場合の手動復元�
 rm -f ~/.claude/cc-retrospective-learner.md
 rm -f ~/.claude/cc-retrospective-learner-design.md
 rm -f ~/.claude/cc-retrospective-learner-setup.sh
+rm -f ~/.claude/cc-retrospective-learner-mode.txt
+rm -f ~/.claude/reviewed_sessions.md
 rm -f ~/.claude/sessions.md
 rm -f ~/.claude/last_weekly_review.txt
 rm -rf ~/.claude/agents/session-reviewer.md
@@ -68,7 +70,8 @@ cp ~/.claude/backups/pre-cc-retrospective-learner/feedback_*.md ~/.claude/memory
 - `~/.claude/CLAUDE.md` にマーカーが残っていないこと
 - `~/.claude/cc-retrospective-learner.md` が存在しないこと
 - `~/.claude/cc-retrospective-learner-setup.sh` が存在しないこと
-- `~/.claude/sessions.md` が存在しないこと
+- `~/.claude/reviewed_sessions.md` が存在しないこと
+- `~/.claude/cc-retrospective-learner-mode.txt` が存在しないこと
 - 各プロジェクトの `memory/short-term/` が存在しないこと
 - 各プロジェクトの `memory/long-term/` が存在しないこと
 
