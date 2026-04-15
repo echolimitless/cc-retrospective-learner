@@ -134,6 +134,11 @@ do_install() {
   cp "$TEMPLATES_DIR/hooks/guard-memory-write.sh" "$CLAUDE_DIR/hooks/guard-memory-write.sh"
   ok "hooks/guard-memory-write.sh"
 
+  # commands ディレクトリ
+  mkdir -p "$CLAUDE_DIR/commands"
+  cp "$TEMPLATES_DIR/commands/retrospective.md" "$CLAUDE_DIR/commands/retrospective.md"
+  ok "commands/retrospective.md"
+
   # --- 3. 方式別ファイルをコピー ---
   info "方式別ファイルをコピーしています（$mode）..."
 
@@ -193,7 +198,7 @@ do_install() {
   if [[ "$mode" == "everytime" ]]; then
     info "次回の Claude Code セッション開始時からふりかえりベースの学習機構が有効になります。"
   else
-    info "ふりかえりを実行したい時は、セッション中に「ふりかえり」と指示してください。"
+    info "ふりかえりを実行したい時は、セッション中に /retrospective と入力してください。"
   fi
   info "ロールバック: bash cc-retrospective-learner-setup.sh rollback"
   info "手動ロールバック手順: $BACKUP_DIR/rollback.md"
@@ -232,6 +237,7 @@ do_rollback() {
     "$CLAUDE_DIR/agents/session-reviewer.md"
     "$CLAUDE_DIR/agents/weekly-promoter.md"
     "$CLAUDE_DIR/hooks/guard-memory-write.sh"
+    "$CLAUDE_DIR/commands/retrospective.md"
   )
 
   for f in "${files_to_remove[@]}"; do
@@ -241,7 +247,7 @@ do_rollback() {
   done
 
   # 空ディレクトリのクリーンアップ
-  for dir in "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/agents"; do
+  for dir in "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands"; do
     if [[ -d "$dir" ]] && [[ -z "$(ls -A "$dir" 2>/dev/null)" ]]; then
       rmdir "$dir" && ok "空ディレクトリ削除: $dir" || true
     fi

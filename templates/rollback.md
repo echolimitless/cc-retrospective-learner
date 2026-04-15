@@ -35,9 +35,11 @@ rm -f ~/.claude/sessions.md
 rm -f ~/.claude/last_weekly_review.txt
 rm -rf ~/.claude/agents/session-reviewer.md
 rm -rf ~/.claude/agents/weekly-promoter.md
+rm -f ~/.claude/hooks/guard-memory-write.sh
+rm -f ~/.claude/commands/retrospective.md
 ```
 
-**注意**: `~/.claude/agents/` ディレクトリ自体は、他のエージェント定義が含まれている可能性があるため削除しないでください。
+**注意**: `~/.claude/agents/`, `~/.claude/commands/` ディレクトリ自体は、他の定義が含まれている可能性があるため削除しないでください。
 
 ### 3. プロジェクト別メモリディレクトリを削除
 
@@ -72,6 +74,7 @@ cp ~/.claude/backups/pre-cc-retrospective-learner/feedback_*.md ~/.claude/memory
 - `~/.claude/cc-retrospective-learner-setup.sh` が存在しないこと
 - `~/.claude/reviewed_sessions.md` が存在しないこと
 - `~/.claude/cc-retrospective-learner-mode.txt` が存在しないこと
+- `~/.claude/commands/retrospective.md` が存在しないこと
 - 各プロジェクトの `memory/short-term/` が存在しないこと
 - 各プロジェクトの `memory/long-term/` が存在しないこと
 

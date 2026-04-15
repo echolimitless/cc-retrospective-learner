@@ -1,5 +1,30 @@
 # 変更履歴
 
+## [2026-04-15] オンデマンド方式のふりかえりを /retrospective コマンド化
+
+### Pain
+
+- オンデマンド方式のふりかえり起動が「ふりかえり」「振り返り」等の自然言語トリガーに依存していた
+- 曖昧な表現で別の解釈をされる可能性がある（確実性に欠ける）
+
+### 意思決定
+
+- `~/.claude/commands/retrospective.md` にスラッシュコマンドを配置し、`/retrospective` で確実に起動できるようにした
+- コマンドファイルの中身はプロトコル本体（`cc-retrospective-learner.md`）への読み込み指示のみ。二重管理を避けるため
+- CLAUDE.md のオンデマンドセクションも自然言語トリガーの記述を削除し、`/retrospective` コマンドの案内に変更
+
+### 変更内容
+
+#### 新規作成
+- `templates/commands/retrospective.md` — `/retrospective` スラッシュコマンド
+
+#### 変更
+- `cc-retrospective-learner-setup.sh` — commands/ ディレクトリの作成・コピー・ロールバック削除を追加
+- `templates/claude-md-section-ondemand.md` — 自然言語トリガーを `/retrospective` コマンドの案内に変更
+- `templates/rollback.md` — 削除対象に `commands/retrospective.md` を追加
+
+---
+
 ## [2026-04-14] sessions.md 廃止・オンデマンド方式の追加
 
 ### Pain
